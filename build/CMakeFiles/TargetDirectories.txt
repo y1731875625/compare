@@ -1,4 +1,0 @@
-D:/vscode/pro/compare/build/CMakeFiles/edit_cache.dir
-D:/vscode/pro/compare/build/CMakeFiles/main.dir
-D:/vscode/pro/compare/build/CMakeFiles/rebuild_cache.dir
-D:/vscode/pro/compare/build/CMakeFiles/main_autogen.dir
