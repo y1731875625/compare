@@ -1,0 +1,2 @@
+D:\Qt\Tools\mingw1310_64\bin\ar.exe qc libstaticLib.a CMakeFiles/staticLib.dir/staticlib1.cpp.obj CMakeFiles/staticLib.dir/staticlib2.cpp.obj
+D:\Qt\Tools\mingw1310_64\bin\ranlib.exe libstaticLib.a

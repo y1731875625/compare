@@ -1,0 +1,5 @@
+D:/vscode/pro/compare/build/config.tests/static_link_order/CMakeFiles/objLib.dir
+D:/vscode/pro/compare/build/config.tests/static_link_order/CMakeFiles/staticLib.dir
+D:/vscode/pro/compare/build/config.tests/static_link_order/CMakeFiles/edit_cache.dir
+D:/vscode/pro/compare/build/config.tests/static_link_order/CMakeFiles/static_link_order_test.dir
+D:/vscode/pro/compare/build/config.tests/static_link_order/CMakeFiles/rebuild_cache.dir
