@@ -1,0 +1,103 @@
+/* vscode_dark.qss - VSCode 深色主题 */
+
+/* 全局背景与文字 */
+QMainWindow, QDialog, QWidget {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+}
+
+/* 输入框 */
+QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QSpinBox, QDoubleSpinBox {
+    background-color: #3c3c3c;
+    color: #d4d4d4;
+    border: 1px solid #3c3c3c;
+    border-radius: 3px;
+    padding: 4px;
+}
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+    border: 1px solid #007acc;
+}
+
+/* 按钮 */
+QPushButton {
+    background-color: #0e639c;
+    color: #ffffff;
+    border: none;
+    border-radius: 3px;
+    padding: 5px 12px;
+}
+QPushButton:hover {
+    background-color: #1177bb;
+}
+QPushButton:pressed {
+    background-color: #0e4d7a;
+}
+QPushButton:disabled {
+    background-color: #3c3c3c;
+    color: #6c6c6c;
+}
+
+/* 表格 */
+QTableWidget {
+    background-color: #1e1e1e;
+    alternate-background-color: #2d2d2d;
+    gridline-color: #3c3c3c;
+    selection-background-color: #264f78;
+    selection-color: #ffffff;
+}
+QHeaderView::section {
+    background-color: #2d2d2d;
+    color: #d4d4d4;
+    padding: 4px;
+    border: 1px solid #3c3c3c;
+}
+
+/* 标签页 */
+QTabWidget::pane {
+    border: 1px solid #3c3c3c;
+    background-color: #1e1e1e;
+}
+QTabBar::tab {
+    background-color: #2d2d2d;
+    color: #d4d4d4;
+    padding: 6px 12px;
+    margin-right: 2px;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+}
+QTabBar::tab:selected {
+    background-color: #1e1e1e;
+    border-bottom: 2px solid #007acc;
+}
+QTabBar::tab:hover {
+    background-color: #3c3c3c;
+}
+
+/* 分割器手柄 */
+QSplitter::handle {
+    background-color: #3c3c3c;
+}
+
+/* 进度条 */
+QProgressBar {
+    background-color: #3c3c3c;
+    border: none;
+    border-radius: 3px;
+    text-align: center;
+    color: #d4d4d4;
+}
+QProgressBar::chunk {
+    background-color: #0e639c;
+    border-radius: 3px;
+}
+
+/* 状态栏 */
+QStatusBar {
+    background-color: #007acc;
+    color: #ffffff;
+}
+
+/* 标签 */
+QLabel {
+    color: #d4d4d4;
+}

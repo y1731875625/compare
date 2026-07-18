@@ -1,5 +1,7 @@
 #include "DiffEngine.h"
 #include "RecordConstants.h"
+#define XXH_INLINE_ALL
+#include "xxhash.h"          // 请将 xxhash.h 放入项目并包含
 #include <QFile>
 #include <QDataStream>
 #include <QDebug>
@@ -25,6 +27,8 @@ qint64 DiffEngine::generateDiffFile(const VCDUFileReader &readerA,
     out.setVersion(QDataStream::Qt_6_0);
 
     qint64 totalDiffs = 0;
+    const int DATA_SIZE = VCDU::DATA_SIZE;  // 852
+    const int DATA_OFFSET = VCDU::DATA_OFFSET; // 38
 
     for (int i = 0; i < count; ++i) {
         QByteArray rawA = readerA.readRawRecord(i);
@@ -34,17 +38,45 @@ qint64 DiffEngine::generateDiffFile(const VCDUFileReader &readerA,
             continue;
         }
 
-        // 从偏移 38 开始比对 852 字节（去掉前38字节）
-        for (int offset = VCDU::DATA_OFFSET; offset < VCDU::DATA_OFFSET + VCDU::DATA_SIZE; ++offset) {
-            if (rawA[offset] != rawB[offset]) {
-                DataDiff diff;
-                diff.recordIndex = i;
-                diff.byteOffsetInRecord = offset;
-                diff.valueA = (unsigned char)rawA[offset];
-                diff.valueB = (unsigned char)rawB[offset];
-                out << diff.recordIndex << diff.byteOffsetInRecord << diff.valueA << diff.valueB;
-                totalDiffs++;
+        // 提取数据区指针
+        const char* dataA = rawA.constData() + DATA_OFFSET;
+        const char* dataB = rawB.constData() + DATA_OFFSET;
+
+        // ========== 哈希快速比较 ==========
+        // 使用 xxHash64 计算数据区哈希
+        XXH64_hash_t hashA = XXH64(dataA, DATA_SIZE, 0);
+        XXH64_hash_t hashB = XXH64(dataB, DATA_SIZE, 0);
+
+        if (hashA != hashB) {
+            // 哈希不同，必然存在差异，逐字节定位
+            for (int offset = DATA_OFFSET; offset < DATA_OFFSET + DATA_SIZE; ++offset) {
+                if (rawA[offset] != rawB[offset]) {
+                    DataDiff diff;
+                    diff.recordIndex = i;
+                    diff.byteOffsetInRecord = offset;
+                    diff.valueA = (unsigned char)rawA[offset];
+                    diff.valueB = (unsigned char)rawB[offset];
+                    out << diff.recordIndex << diff.byteOffsetInRecord << diff.valueA << diff.valueB;
+                    totalDiffs++;
+                }
             }
+        } else {
+            // 哈希相同，极大概率相同，但我们仍用 memcmp 做最终确认（防御碰撞）
+            if (memcmp(dataA, dataB, DATA_SIZE) != 0) {
+                // 虽然哈希相同但数据不同（极小概率），此时仍需逐字节定位
+                for (int offset = DATA_OFFSET; offset < DATA_OFFSET + DATA_SIZE; ++offset) {
+                    if (rawA[offset] != rawB[offset]) {
+                        DataDiff diff;
+                        diff.recordIndex = i;
+                        diff.byteOffsetInRecord = offset;
+                        diff.valueA = (unsigned char)rawA[offset];
+                        diff.valueB = (unsigned char)rawB[offset];
+                        out << diff.recordIndex << diff.byteOffsetInRecord << diff.valueA << diff.valueB;
+                        totalDiffs++;
+                    }
+                }
+            }
+            // 否则完全相同，跳过
         }
 
         if (progressCallback && (i % 100 == 0 || i == count - 1)) {
@@ -58,6 +90,7 @@ qint64 DiffEngine::generateDiffFile(const VCDUFileReader &readerA,
     return totalDiffs;
 }
 
+// loadDiffRange 和 getDiffCount 保持不变
 QVector<DataDiff> DiffEngine::loadDiffRange(const QString &diffFilePath,
                                             qint64 startIndex,
                                             int count)
@@ -74,7 +107,6 @@ QVector<DataDiff> DiffEngine::loadDiffRange(const QString &diffFilePath,
     QDataStream in(&file);
     in.setVersion(QDataStream::Qt_6_0);
 
-    // 跳过前面的记录
     qint64 currentIndex = 0;
     while (currentIndex < startIndex && !in.atEnd()) {
         DataDiff dummy;
@@ -82,7 +114,6 @@ QVector<DataDiff> DiffEngine::loadDiffRange(const QString &diffFilePath,
         currentIndex++;
     }
 
-    // 读取目标数量的记录
     while (diffs.size() < count && !in.atEnd()) {
         DataDiff diff;
         in >> diff.recordIndex >> diff.byteOffsetInRecord >> diff.valueA >> diff.valueB;
@@ -99,15 +130,13 @@ qint64 DiffEngine::getDiffCount(const QString &diffFilePath)
     if (!file.open(QIODevice::ReadOnly)) {
         return 0;
     }
-
-    qint64 fileSize = file.size();
-    int recordSize = sizeof(int) + sizeof(int) + sizeof(unsigned char) + sizeof(unsigned char);
-    // 由于 QDataStream 有额外开销，实际大小无法精确计算，用文件大小估算
-    // 更可靠的方式是遍历计数，但这里用估算
+    // 更好的方法是遍历计数，但为了快速估算，用文件大小除以每条记录的长度
+    // 每条差异固定为：int + int + unsigned char + unsigned char = 4+4+1+1 = 10 字节
+    // 但 QDataStream 会额外添加开销，所以实际略大，这里粗略估算
+    qint64 size = file.size();
     file.close();
-
-    // 每条差异约 12 字节（4+4+1+1 + 流开销）
-    return fileSize / 12;
+    // 每条差异约 12 字节（包括流标识）
+    return size / 12;
 }
 
 QVector<FrameMatchError> DiffEngine::compareFrameSequences(const VCDUFileReader &readerA,

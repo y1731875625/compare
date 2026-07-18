@@ -1,148 +1,57 @@
 #include "MainWindow.h"
+#include "ui_MainWindow.h"
 #include "RecordConstants.h"
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QSplitter>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProgressDialog>
-#include <QDebug>
 #include <QStatusBar>
+#include <QDir>
+#include <QDateTime>
+#include <QDebug>
+
+// 分页大小常量（与原有定义一致）
+static const int DIFF_PAGE_SIZE = 100;
+static const int ERROR_PAGE_SIZE = 50;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
 {
-    // 创建中央部件
-    QWidget *central = new QWidget(this);
-    setCentralWidget(central);
-    QVBoxLayout *mainLayout = new QVBoxLayout(central);
+    ui->setupUi(this);
+    // ---------- 信号连接 ----------
+    connect(ui->btnOrig, &QPushButton::clicked, this, &MainWindow::onSelectOriginal);
+    connect(ui->btnComp, &QPushButton::clicked, this, &MainWindow::onSelectCompared);
+    connect(ui->btnCompare, &QPushButton::clicked, this, &MainWindow::onCompare);
+    connect(ui->diffTable, &QTableWidget::cellClicked, this, &MainWindow::onDiffItemClicked);
+    connect(ui->errorTable, &QTableWidget::cellClicked, this, &MainWindow::onErrorItemClicked);
 
-    // ========== 顶部控件 ==========
-    QHBoxLayout *topLayout = new QHBoxLayout;
-    m_vc0Input = new QLineEdit;
-    m_vc0Input->setPlaceholderText("VC0 (Hex)");
-    m_btnOrig = new QPushButton("选择原文件");
-    m_btnComp = new QPushButton("选择比较文件");
-    m_btnCompare = new QPushButton("重新比对");
-    m_btnCompare->setEnabled(false);
-    topLayout->addWidget(m_vc0Input);
-    topLayout->addWidget(m_btnOrig);
-    topLayout->addWidget(m_btnComp);
-    topLayout->addWidget(m_btnCompare);
-    mainLayout->addLayout(topLayout);
+    // 差异分页
+    connect(ui->diffFirstBtn, &QPushButton::clicked, this, &MainWindow::onDiffFirstPage);
+    connect(ui->diffPrevBtn, &QPushButton::clicked, this, &MainWindow::onDiffPrevPage);
+    connect(ui->diffNextBtn, &QPushButton::clicked, this, &MainWindow::onDiffNextPage);
+    connect(ui->diffLastBtn, &QPushButton::clicked, this, &MainWindow::onDiffLastPage);
+    connect(ui->diffPageInput, &QLineEdit::returnPressed, this, &MainWindow::onDiffPageJump);
 
-    // ========== 中间：左右分栏（水平分割器） ==========
-    QSplitter *splitter = new QSplitter(Qt::Horizontal);
-    m_leftWidget = new RecordWidget;
-    m_rightWidget = new RecordWidget;
-    splitter->addWidget(m_leftWidget);
-    splitter->addWidget(m_rightWidget);
+    // 错误分页
+    connect(ui->errorFirstBtn, &QPushButton::clicked, this, &MainWindow::onErrorFirstPage);
+    connect(ui->errorPrevBtn, &QPushButton::clicked, this, &MainWindow::onErrorPrevPage);
+    connect(ui->errorNextBtn, &QPushButton::clicked, this, &MainWindow::onErrorNextPage);
+    connect(ui->errorLastBtn, &QPushButton::clicked, this, &MainWindow::onErrorLastPage);
+    connect(ui->errorPageInput, &QLineEdit::returnPressed, this, &MainWindow::onErrorPageJump);
 
-    // ========== 底部：差异列表和错误列表（标签页） ==========
-    m_tabWidget = new QTabWidget;
+    // 初始隐藏分页控件
+    ui->diffPaginationWidget->setVisible(false);
+    ui->errorPaginationWidget->setVisible(false);
 
-    // ---- 差异列表标签页 ----
-    QWidget *diffTab = new QWidget;
-    QVBoxLayout *diffLayout = new QVBoxLayout(diffTab);
-    m_diffTable = new QTableWidget;
-    m_diffTable->setColumnCount(4);
-    m_diffTable->setHorizontalHeaderLabels({"记录号", "字节偏移", "原值", "新值"});
-    m_diffTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    diffLayout->addWidget(m_diffTable);
+    
 
-    // 差异分页控件
-    m_diffPaginationWidget = new QWidget;
-    QHBoxLayout *diffPageLayout = new QHBoxLayout(m_diffPaginationWidget);
-    m_diffFirstBtn = new QPushButton("首页");
-    m_diffPrevBtn = new QPushButton("上一页");
-    m_diffNextBtn = new QPushButton("下一页");
-    m_diffLastBtn = new QPushButton("末页");
-    m_diffPageInput = new QLineEdit;
-    m_diffPageInput->setFixedWidth(50);
-    m_diffPageLabel = new QLabel(" / 1 页");
-    diffPageLayout->addWidget(m_diffFirstBtn);
-    diffPageLayout->addWidget(m_diffPrevBtn);
-    diffPageLayout->addWidget(m_diffNextBtn);
-    diffPageLayout->addWidget(m_diffLastBtn);
-    diffPageLayout->addSpacing(10);
-    diffPageLayout->addWidget(new QLabel("跳转:"));
-    diffPageLayout->addWidget(m_diffPageInput);
-    diffPageLayout->addWidget(m_diffPageLabel);
-    diffPageLayout->addStretch();
-    diffLayout->addWidget(m_diffPaginationWidget);
-    m_diffPaginationWidget->setVisible(false);
-
-    m_tabWidget->addTab(diffTab, "数据差异");
-
-    // ---- CRC/帧错误标签页 ----
-    QWidget *errorTab = new QWidget;
-    QVBoxLayout *errorLayout = new QVBoxLayout(errorTab);
-    m_errorTable = new QTableWidget;
-    m_errorTable->setColumnCount(5);
-    m_errorTable->setHorizontalHeaderLabels({"文件", "类型", "记录号", "详情", "跳转"});
-    m_errorTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    errorLayout->addWidget(m_errorTable);
-
-    // 错误分页控件
-    m_errorPaginationWidget = new QWidget;
-    QHBoxLayout *errorPageLayout = new QHBoxLayout(m_errorPaginationWidget);
-    m_errorFirstBtn = new QPushButton("首页");
-    m_errorPrevBtn = new QPushButton("上一页");
-    m_errorNextBtn = new QPushButton("下一页");
-    m_errorLastBtn = new QPushButton("末页");
-    m_errorPageInput = new QLineEdit;
-    m_errorPageInput->setFixedWidth(50);
-    m_errorPageLabel = new QLabel(" / 1 页");
-    errorPageLayout->addWidget(m_errorFirstBtn);
-    errorPageLayout->addWidget(m_errorPrevBtn);
-    errorPageLayout->addWidget(m_errorNextBtn);
-    errorPageLayout->addWidget(m_errorLastBtn);
-    errorPageLayout->addSpacing(10);
-    errorPageLayout->addWidget(new QLabel("跳转:"));
-    errorPageLayout->addWidget(m_errorPageInput);
-    errorPageLayout->addWidget(m_errorPageLabel);
-    errorPageLayout->addStretch();
-    errorLayout->addWidget(m_errorPaginationWidget);
-    m_errorPaginationWidget->setVisible(false);
-
-    m_tabWidget->addTab(errorTab, "CRC/帧错误");
-
-    // ========== ★ 关键修改：将水平分割器和标签页放入垂直分割器 ==========
-    QSplitter *vSplitter = new QSplitter(Qt::Vertical);
-    vSplitter->addWidget(splitter);      // 上部：左右分栏
-    vSplitter->addWidget(m_tabWidget);   // 下部：标签页
-    vSplitter->setStretchFactor(0, 3);   // 上部拉伸因子 3
-    vSplitter->setStretchFactor(1, 1);   // 下部拉伸因子 1
-
-    // 将垂直分割器添加到主布局（替代原来的两个 addWidget）
-    mainLayout->addWidget(vSplitter);
-
-    // ========== 信号连接 ==========
-    connect(m_btnOrig, &QPushButton::clicked, this, &MainWindow::onSelectOriginal);
-    connect(m_btnComp, &QPushButton::clicked, this, &MainWindow::onSelectCompared);
-    connect(m_btnCompare, &QPushButton::clicked, this, &MainWindow::onCompare);
-    connect(m_diffTable, &QTableWidget::cellClicked, this, &MainWindow::onDiffItemClicked);
-    connect(m_errorTable, &QTableWidget::cellClicked, this, &MainWindow::onErrorItemClicked);
-
-    // 差异分页信号
-    connect(m_diffFirstBtn, &QPushButton::clicked, this, &MainWindow::onDiffFirstPage);
-    connect(m_diffPrevBtn, &QPushButton::clicked, this, &MainWindow::onDiffPrevPage);
-    connect(m_diffNextBtn, &QPushButton::clicked, this, &MainWindow::onDiffNextPage);
-    connect(m_diffLastBtn, &QPushButton::clicked, this, &MainWindow::onDiffLastPage);
-    connect(m_diffPageInput, &QLineEdit::returnPressed, this, &MainWindow::onDiffPageJump);
-
-    // 错误分页信号
-    connect(m_errorFirstBtn, &QPushButton::clicked, this, &MainWindow::onErrorFirstPage);
-    connect(m_errorPrevBtn, &QPushButton::clicked, this, &MainWindow::onErrorPrevPage);
-    connect(m_errorNextBtn, &QPushButton::clicked, this, &MainWindow::onErrorNextPage);
-    connect(m_errorLastBtn, &QPushButton::clicked, this, &MainWindow::onErrorLastPage);
-    connect(m_errorPageInput, &QLineEdit::returnPressed, this, &MainWindow::onErrorPageJump);
-
+    // 窗口初始大小（可由 .ui 决定，也可在此设置）
     resize(1200, 800);
 }
 
 MainWindow::~MainWindow()
 {
+    delete ui;
     if (m_origThread) {
         m_origThread->quit();
         m_origThread->wait();
@@ -156,13 +65,14 @@ MainWindow::~MainWindow()
     }
 }
 
+// -------------------- 选择原文件 --------------------
 void MainWindow::onSelectOriginal()
 {
     QString path = QFileDialog::getOpenFileName(this, "选择原文件");
     if (path.isEmpty()) return;
     m_origPath = path;
 
-    QString vc0Hex = m_vc0Input->text().trimmed();
+    QString vc0Hex = ui->vc0Input->text().trimmed();
     bool ok;
     quint16 vc0 = vc0Hex.toUShort(&ok, 16);
     if (!ok) {
@@ -199,13 +109,29 @@ void MainWindow::onSelectOriginal()
                               Q_ARG(VCDUFileReader::ScanStrategy, VCDUFileReader::StrategyVCDU));
 }
 
+// extern QString EAstring ;
+// -------------------- 选择比较文件 --------------------
 void MainWindow::onSelectCompared()
 {
     QString path = QFileDialog::getOpenFileName(this, "选择比较文件");
     if (path.isEmpty()) return;
     m_compPath = path;
 
-    QString vc0Hex = m_vc0Input->text().trimmed();
+    QString vc0Hex = ui->vc0Input->text().trimmed();
+    QString eaHex = ui->vc0Input_2->text().trimmed(); 
+    QByteArray customPreamble;
+    if (eaHex.isEmpty()) {
+        QMessageBox::warning(this, "错误", "EA 前导码不能为空，请输入 32 个十六进制字符");
+        return;
+    }
+    customPreamble = QByteArray::fromHex(eaHex.toUtf8());
+    if (customPreamble.size() != 16) {
+        QMessageBox::warning(this, "错误",
+                             QString("EA 前导码长度错误，需要 16 字节（32 个十六进制字符），当前为 %1 字节")
+                             .arg(customPreamble.size()));
+        return;
+    }
+    VCDUFileReader::PREAMBLE_EA = customPreamble;
     bool ok;
     quint16 vc0 = vc0Hex.toUShort(&ok, 16);
     if (!ok) {
@@ -241,6 +167,7 @@ void MainWindow::onSelectCompared()
                               Q_ARG(VCDUFileReader::ScanStrategy, VCDUFileReader::StrategyEA));
 }
 
+// -------------------- 扫描完成回调 --------------------
 void MainWindow::handleOriginalScanned(bool success, const QString &error)
 {
     if (m_progressDialog) {
@@ -264,7 +191,7 @@ void MainWindow::handleOriginalScanned(bool success, const QString &error)
     if (m_compLoaded) {
         compareAndUpdate();
     }
-    m_btnCompare->setEnabled(true);
+    ui->btnCompare->setEnabled(true);
     setWindowTitle(QString("原文件记录数: %1").arg(m_readerOrig.recordCount()));
 }
 
@@ -291,29 +218,31 @@ void MainWindow::handleComparedScanned(bool success, const QString &error)
     if (m_origLoaded) {
         compareAndUpdate();
     }
-    m_btnCompare->setEnabled(true);
+    ui->btnCompare->setEnabled(true);
     setWindowTitle(QString("比较文件记录数: %1").arg(m_readerComp.recordCount()));
 }
 
+// -------------------- 显示当前记录 --------------------
 void MainWindow::displayCurrentRecords()
 {
     if (m_origLoaded && m_currentRecordIndex >= 0 &&
         m_currentRecordIndex < m_readerOrig.recordCount()) {
         QByteArray raw = m_readerOrig.readRawRecord(m_currentRecordIndex);
-        m_leftWidget->setRecord(raw);
+        ui->leftWidget->setRecord(raw);
     } else {
-        m_leftWidget->clear();
+        ui->leftWidget->clear();
     }
 
     if (m_compLoaded && m_currentRecordIndex >= 0 &&
         m_currentRecordIndex < m_readerComp.recordCount()) {
         QByteArray raw = m_readerComp.readRawRecord(m_currentRecordIndex);
-        m_rightWidget->setRecord(raw);
+        ui->rightWidget->setRecord(raw);
     } else {
-        m_rightWidget->clear();
+        ui->rightWidget->clear();
     }
 }
 
+// -------------------- 比对核心 --------------------
 void MainWindow::compareAndUpdate()
 {
     if (!m_origLoaded || !m_compLoaded) return;
@@ -359,6 +288,10 @@ void MainWindow::compareAndUpdate()
     loadDiffPage(0);
 
     statusBar()->showMessage(QString("总差异数: %1 条").arg(m_totalDiffCount));
+    qDebug() << "总差异数: " << m_totalDiffCount;
+    if(m_totalDiffCount == 0) {
+        qDebug()<<"载荷数据内容比对一致";
+    }
 
     int maxRec = qMin(countA, countB);
     if (m_currentRecordIndex >= maxRec)
@@ -366,19 +299,18 @@ void MainWindow::compareAndUpdate()
     displayCurrentRecords();
 }
 
-// ==================== 差异分页函数 ====================
-
+// ==================== 差异分页 ====================
 void MainWindow::loadDiffPage(int pageIndex)
 {
     if (m_diffFilePath.isEmpty() || !QFile::exists(m_diffFilePath)) {
-        m_diffTable->setRowCount(0);
-        m_diffPaginationWidget->setVisible(false);
+        ui->diffTable->setRowCount(0);
+        ui->diffPaginationWidget->setVisible(false);
         return;
     }
 
     qint64 startIndex = (qint64)pageIndex * DIFF_PAGE_SIZE;
     if (startIndex >= m_totalDiffCount) {
-        m_diffTable->setRowCount(0);
+        ui->diffTable->setRowCount(0);
         return;
     }
 
@@ -387,87 +319,63 @@ void MainWindow::loadDiffPage(int pageIndex)
 
     QVector<DataDiff> diffs = DiffEngine::loadDiffRange(m_diffFilePath, startIndex, count);
 
-    m_diffTable->setRowCount(diffs.size());
+    ui->diffTable->setRowCount(diffs.size());
     for (int i = 0; i < diffs.size(); ++i) {
         const DataDiff &d = diffs[i];
-        m_diffTable->setItem(i, 0, new QTableWidgetItem(QString::number(d.recordIndex)));
-        m_diffTable->setItem(i, 1, new QTableWidgetItem(QString::number(d.byteOffsetInRecord)));
-        m_diffTable->setItem(i, 2, new QTableWidgetItem(QString("0x%1").arg(d.valueA, 2, 16, QChar('0'))));
-        m_diffTable->setItem(i, 3, new QTableWidgetItem(QString("0x%1").arg(d.valueB, 2, 16, QChar('0'))));
+        ui->diffTable->setItem(i, 0, new QTableWidgetItem(QString::number(d.recordIndex)));
+        ui->diffTable->setItem(i, 1, new QTableWidgetItem(QString::number(d.byteOffsetInRecord)));
+        ui->diffTable->setItem(i, 2, new QTableWidgetItem(QString("0x%1").arg(d.valueA, 2, 16, QChar('0'))));
+        ui->diffTable->setItem(i, 3, new QTableWidgetItem(QString("0x%1").arg(d.valueB, 2, 16, QChar('0'))));
     }
 
     m_currentDiffPage = pageIndex;
-    m_diffPageLabel->setText(QString(" / %1 页").arg(m_totalDiffPages));
-    m_diffPageInput->setText(QString::number(pageIndex + 1));
-    m_diffPaginationWidget->setVisible(m_totalDiffPages > 1);
+    ui->diffPageLabel->setText(QString(" / %1 页").arg(m_totalDiffPages));
+    ui->diffPageInput->setText(QString::number(pageIndex + 1));
+    ui->diffPaginationWidget->setVisible(m_totalDiffPages > 1);
 
-    m_diffFirstBtn->setEnabled(pageIndex > 0);
-    m_diffPrevBtn->setEnabled(pageIndex > 0);
-    m_diffNextBtn->setEnabled(pageIndex < m_totalDiffPages - 1);
-    m_diffLastBtn->setEnabled(pageIndex < m_totalDiffPages - 1);
+    ui->diffFirstBtn->setEnabled(pageIndex > 0);
+    ui->diffPrevBtn->setEnabled(pageIndex > 0);
+    ui->diffNextBtn->setEnabled(pageIndex < m_totalDiffPages - 1);
+    ui->diffLastBtn->setEnabled(pageIndex < m_totalDiffPages - 1);
 }
 
-void MainWindow::onDiffFirstPage()
-{
-    loadDiffPage(0);
-}
-
-void MainWindow::onDiffPrevPage()
-{
-    if (m_currentDiffPage > 0) {
-        loadDiffPage(m_currentDiffPage - 1);
-    }
-}
-
-void MainWindow::onDiffNextPage()
-{
-    if (m_currentDiffPage < m_totalDiffPages - 1) {
-        loadDiffPage(m_currentDiffPage + 1);
-    }
-}
-
-void MainWindow::onDiffLastPage()
-{
-    if (m_totalDiffPages > 0) {
-        loadDiffPage(m_totalDiffPages - 1);
-    }
-}
-
+void MainWindow::onDiffFirstPage()   { loadDiffPage(0); }
+void MainWindow::onDiffPrevPage()    { if (m_currentDiffPage > 0) loadDiffPage(m_currentDiffPage - 1); }
+void MainWindow::onDiffNextPage()    { if (m_currentDiffPage < m_totalDiffPages - 1) loadDiffPage(m_currentDiffPage + 1); }
+void MainWindow::onDiffLastPage()    { if (m_totalDiffPages > 0) loadDiffPage(m_totalDiffPages - 1); }
 void MainWindow::onDiffPageJump()
 {
-    int page = m_diffPageInput->text().toInt() - 1;
+    int page = ui->diffPageInput->text().toInt() - 1;
     if (page >= 0 && page < m_totalDiffPages) {
         loadDiffPage(page);
     }
 }
 
+// -------------------- 差异条目点击跳转 --------------------
 void MainWindow::onDiffItemClicked(int row, int col)
 {
-    if (row < 0 || row >= m_diffTable->rowCount()) return;
-    
-    // 计算实际索引
+    if (row < 0 || row >= ui->diffTable->rowCount()) return;
+
     qint64 startIndex = (qint64)m_currentDiffPage * DIFF_PAGE_SIZE;
     qint64 dataIndex = startIndex + row;
     if (dataIndex < 0 || dataIndex >= m_totalDiffCount) return;
 
-    // 从差异文件读取该条记录
     QVector<DataDiff> diffs = DiffEngine::loadDiffRange(m_diffFilePath, dataIndex, 1);
     if (diffs.isEmpty()) return;
 
     const DataDiff &diff = diffs[0];
     m_currentRecordIndex = diff.recordIndex;
     displayCurrentRecords();
+    QColor bgColor(Qt::green);
+    QColor fgColor(Qt::black);
+    ui->leftWidget->highlightByteRange(diff.byteOffsetInRecord, 1, bgColor, fgColor);
+    ui->rightWidget->highlightByteRange(diff.byteOffsetInRecord, 1, bgColor, fgColor);
 
-    QColor highlightColor(Qt::yellow);
-    m_leftWidget->highlightByteRange(diff.byteOffsetInRecord, 1, highlightColor);
-    m_rightWidget->highlightByteRange(diff.byteOffsetInRecord, 1, highlightColor);
-
-    m_leftWidget->jumpToByteOffset(diff.byteOffsetInRecord);
-    m_rightWidget->jumpToByteOffset(diff.byteOffsetInRecord);
+    ui->leftWidget->jumpToByteOffset(diff.byteOffsetInRecord);
+    ui->rightWidget->jumpToByteOffset(diff.byteOffsetInRecord);
 }
 
-// ==================== 错误列表函数 ====================
-
+// ==================== 错误列表 ====================
 void MainWindow::populateErrorTables()
 {
     m_allErrors.clear();
@@ -529,8 +437,8 @@ void MainWindow::populateErrorTables()
 void MainWindow::loadErrorPage(int pageIndex)
 {
     if (m_allErrors.isEmpty()) {
-        m_errorTable->setRowCount(0);
-        m_errorPaginationWidget->setVisible(false);
+        ui->errorTable->setRowCount(0);
+        ui->errorPaginationWidget->setVisible(false);
         return;
     }
 
@@ -543,77 +451,55 @@ void MainWindow::loadErrorPage(int pageIndex)
     int endIndex = qMin(startIndex + ERROR_PAGE_SIZE, m_allErrors.size());
     int count = endIndex - startIndex;
 
-    m_errorTable->setRowCount(count);
+    ui->errorTable->setRowCount(count);
     for (int i = 0; i < count; ++i) {
         const ErrorItem &err = m_allErrors[startIndex + i];
         int row = i;
-        m_errorTable->setItem(row, 0, new QTableWidgetItem(err.file));
-        m_errorTable->setItem(row, 1, new QTableWidgetItem(err.type));
-        m_errorTable->setItem(row, 2, new QTableWidgetItem(
+        ui->errorTable->setItem(row, 0, new QTableWidgetItem(err.file));
+        ui->errorTable->setItem(row, 1, new QTableWidgetItem(err.type));
+        ui->errorTable->setItem(row, 2, new QTableWidgetItem(
             err.recordIndex >= 0 ? QString::number(err.recordIndex) : ""));
-        m_errorTable->setItem(row, 3, new QTableWidgetItem(err.detail));
+        ui->errorTable->setItem(row, 3, new QTableWidgetItem(err.detail));
 
         QTableWidgetItem *jumpItem = new QTableWidgetItem("点击跳转");
         jumpItem->setForeground(Qt::blue);
         jumpItem->setTextAlignment(Qt::AlignCenter);
-        jumpItem->setData(Qt::UserRole, 
+        jumpItem->setData(Qt::UserRole,
             QVariant::fromValue(QPair<int,bool>(err.recordIndex, err.isLeft)));
-        m_errorTable->setItem(row, 4, jumpItem);
+        ui->errorTable->setItem(row, 4, jumpItem);
     }
 
     m_currentErrorPage = pageIndex;
-    m_errorPageLabel->setText(QString(" / %1 页").arg(m_totalErrorPages));
-    m_errorPageInput->setText(QString::number(pageIndex + 1));
-    m_errorPaginationWidget->setVisible(m_totalErrorPages > 1);
+    ui->errorPageLabel->setText(QString(" / %1 页").arg(m_totalErrorPages));
+    ui->errorPageInput->setText(QString::number(pageIndex + 1));
+    ui->errorPaginationWidget->setVisible(m_totalErrorPages > 1);
 
-    m_errorFirstBtn->setEnabled(pageIndex > 0);
-    m_errorPrevBtn->setEnabled(pageIndex > 0);
-    m_errorNextBtn->setEnabled(pageIndex < m_totalErrorPages - 1);
-    m_errorLastBtn->setEnabled(pageIndex < m_totalErrorPages - 1);
+    ui->errorFirstBtn->setEnabled(pageIndex > 0);
+    ui->errorPrevBtn->setEnabled(pageIndex > 0);
+    ui->errorNextBtn->setEnabled(pageIndex < m_totalErrorPages - 1);
+    ui->errorLastBtn->setEnabled(pageIndex < m_totalErrorPages - 1);
 }
 
 // ==================== 错误分页控制 ====================
-
-void MainWindow::onErrorFirstPage()
-{
-    loadErrorPage(0);
-}
-
-void MainWindow::onErrorPrevPage()
-{
-    if (m_currentErrorPage > 0) {
-        loadErrorPage(m_currentErrorPage - 1);
-    }
-}
-
-void MainWindow::onErrorNextPage()
-{
-    if (m_currentErrorPage < m_totalErrorPages - 1) {
-        loadErrorPage(m_currentErrorPage + 1);
-    }
-}
-
-void MainWindow::onErrorLastPage()
-{
-    if (m_totalErrorPages > 0) {
-        loadErrorPage(m_totalErrorPages - 1);
-    }
-}
-
+void MainWindow::onErrorFirstPage()   { loadErrorPage(0); }
+void MainWindow::onErrorPrevPage()    { if (m_currentErrorPage > 0) loadErrorPage(m_currentErrorPage - 1); }
+void MainWindow::onErrorNextPage()    { if (m_currentErrorPage < m_totalErrorPages - 1) loadErrorPage(m_currentErrorPage + 1); }
+void MainWindow::onErrorLastPage()    { if (m_totalErrorPages > 0) loadErrorPage(m_totalErrorPages - 1); }
 void MainWindow::onErrorPageJump()
 {
-    int page = m_errorPageInput->text().toInt() - 1;
+    int page = ui->errorPageInput->text().toInt() - 1;
     if (page >= 0 && page < m_totalErrorPages) {
         loadErrorPage(page);
     }
 }
 
+// -------------------- 错误条目点击跳转 --------------------
 void MainWindow::onErrorItemClicked(int row, int col)
 {
     if (col != 4) return; // 只有"点击跳转"列才处理
-    QTableWidgetItem *item = m_errorTable->item(row, 4);
+    QTableWidgetItem *item = ui->errorTable->item(row, 4);
     if (!item) return;
-    
+
     QPair<int,bool> data = item->data(Qt::UserRole).value<QPair<int,bool>>();
     int recordIndex = data.first;
     bool isLeft = data.second;
@@ -627,25 +513,26 @@ void MainWindow::onErrorItemClicked(int row, int col)
     displayCurrentRecords();
 
     QColor highlightColor(Qt::red);
-    // 高亮帧计数位置（偏移2，长度3）
+    // 高亮帧计数位置（偏移2，长度3），常量 VCDU::FRAME_OFFSET 需定义
     if (isLeft && recordIndex < m_readerOrig.recordCount()) {
-        m_leftWidget->highlightByteRange(VCDU::FRAME_OFFSET, 3, highlightColor);
-        m_leftWidget->jumpToByteOffset(VCDU::FRAME_OFFSET);
+        ui->leftWidget->highlightByteRange(VCDU::FRAME_OFFSET, 2, highlightColor);
+        ui->leftWidget->jumpToByteOffset(VCDU::FRAME_OFFSET);
     } else if (!isLeft && recordIndex < m_readerComp.recordCount()) {
-        m_rightWidget->highlightByteRange(VCDU::FRAME_OFFSET, 3, highlightColor);
-        m_rightWidget->jumpToByteOffset(VCDU::FRAME_OFFSET);
+        ui->rightWidget->highlightByteRange(VCDU::FRAME_OFFSET, 2, highlightColor);
+        ui->rightWidget->jumpToByteOffset(VCDU::FRAME_OFFSET);
     } else {
         if (recordIndex < m_readerOrig.recordCount()) {
-            m_leftWidget->highlightByteRange(VCDU::FRAME_OFFSET, 3, highlightColor);
-            m_leftWidget->jumpToByteOffset(VCDU::FRAME_OFFSET);
+            ui->leftWidget->highlightByteRange(VCDU::FRAME_OFFSET, 2, highlightColor);
+            ui->leftWidget->jumpToByteOffset(VCDU::FRAME_OFFSET);
         }
         if (recordIndex < m_readerComp.recordCount()) {
-            m_rightWidget->highlightByteRange(VCDU::FRAME_OFFSET, 3, highlightColor);
-            m_rightWidget->jumpToByteOffset(VCDU::FRAME_OFFSET);
+            ui->rightWidget->highlightByteRange(VCDU::FRAME_OFFSET, 2, highlightColor);
+            ui->rightWidget->jumpToByteOffset(VCDU::FRAME_OFFSET);
         }
     }
 }
 
+// -------------------- 手动触发比对 --------------------
 void MainWindow::onCompare()
 {
     if (!m_origLoaded || !m_compLoaded) {
@@ -653,13 +540,4 @@ void MainWindow::onCompare()
         return;
     }
     compareAndUpdate();
-}
-
-void MainWindow::onRecordIndexChanged(int newIndex)
-{
-    if (newIndex >= 0 && newIndex < m_readerOrig.recordCount() &&
-        newIndex < m_readerComp.recordCount()) {
-        m_currentRecordIndex = newIndex;
-        displayCurrentRecords();
-    }
 }

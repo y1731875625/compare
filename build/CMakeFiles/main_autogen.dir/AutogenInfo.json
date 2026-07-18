@@ -1,0 +1,148 @@
+{
+	"BUILD_DIR" : "D:/vscode/pro/compare/build/main_autogen",
+	"CMAKE_BINARY_DIR" : "D:/vscode/pro/compare/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "D:/vscode/pro/compare/build",
+	"CMAKE_CURRENT_SOURCE_DIR" : "D:/vscode/pro/compare",
+	"CMAKE_EXECUTABLE" : "D:/vscode/cmake/bin/cmake.exe",
+	"CMAKE_SOURCE_DIR" : "D:/vscode/pro/compare",
+	"DEP_FILE" : "",
+	"DEP_FILE_RULE_NAME" : "",
+	"HEADERS" : 
+	[
+		[
+			"D:/vscode/pro/compare/src/DiffEngine.h",
+			"MU",
+			"UVLADIE3JM/moc_DiffEngine.cpp"
+		],
+		[
+			"D:/vscode/pro/compare/src/MainWindow.h",
+			"MU",
+			"UVLADIE3JM/moc_MainWindow.cpp"
+		],
+		[
+			"D:/vscode/pro/compare/src/RecordWidget.h",
+			"MU",
+			"UVLADIE3JM/moc_RecordWidget.cpp"
+		],
+		[
+			"D:/vscode/pro/compare/src/ScannerWorker.h",
+			"MU",
+			"UVLADIE3JM/moc_ScannerWorker.cpp"
+		],
+		[
+			"D:/vscode/pro/compare/src/VCDUFileReader.h",
+			"MU",
+			"UVLADIE3JM/moc_VCDUFileReader.cpp"
+		],
+		[
+			"D:/vscode/pro/compare/src/xxh_x86dispatch.h",
+			"MU",
+			"UVLADIE3JM/moc_xxh_x86dispatch.cpp"
+		],
+		[
+			"D:/vscode/pro/compare/src/xxhash.h",
+			"MU",
+			"UVLADIE3JM/moc_xxhash.cpp"
+		]
+	],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "D:/vscode/pro/compare/build/main_autogen/include",
+	"MOC_COMPILATION_FILE" : "D:/vscode/pro/compare/build/main_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : 
+	[
+		"MINGW_HAS_SECURE_API=1",
+		"QT_CHARTS_LIB",
+		"QT_CONCURRENT_LIB",
+		"QT_CORE_LIB",
+		"QT_GUI_LIB",
+		"QT_MULTIMEDIA_LIB",
+		"QT_NETWORK_LIB",
+		"QT_NO_DEBUG",
+		"QT_OPENGLWIDGETS_LIB",
+		"QT_OPENGL_LIB",
+		"QT_SERIALPORT_LIB",
+		"QT_WIDGETS_LIB",
+		"UNICODE",
+		"WIN32",
+		"WIN64",
+		"_ENABLE_EXTENDED_ALIGNED_STORAGE",
+		"_UNICODE",
+		"_WIN64"
+	],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"D:/vscode/pro/compare/build",
+		"D:/vscode/pro/compare",
+		"D:/Qt/6.8.0/mingw_64/include/QtWidgets",
+		"D:/Qt/6.8.0/mingw_64/include",
+		"D:/Qt/6.8.0/mingw_64/include/QtCore",
+		"D:/Qt/6.8.0/mingw_64/mkspecs/win32-g++",
+		"D:/Qt/6.8.0/mingw_64/include/QtGui",
+		"D:/Qt/6.8.0/mingw_64/include/QtCharts",
+		"D:/Qt/6.8.0/mingw_64/include/QtOpenGL",
+		"D:/Qt/6.8.0/mingw_64/include/QtOpenGLWidgets",
+		"D:/Qt/6.8.0/mingw_64/include/QtMultimedia",
+		"D:/Qt/6.8.0/mingw_64/include/QtNetwork",
+		"D:/Qt/6.8.0/mingw_64/include/QtSerialPort",
+		"D:/Qt/6.8.0/mingw_64/include/QtConcurrent",
+		"D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++",
+		"D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/x86_64-w64-mingw32",
+		"D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/backward",
+		"D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include",
+		"D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include-fixed",
+		"D:/Qt/Tools/mingw1310_64/x86_64-w64-mingw32/include"
+	],
+	"MOC_MACRO_NAMES" : 
+	[
+		"Q_OBJECT",
+		"Q_GADGET",
+		"Q_NAMESPACE",
+		"Q_NAMESPACE_EXPORT",
+		"Q_GADGET_EXPORT",
+		"Q_ENUM_NS"
+	],
+	"MOC_OPTIONS" : [],
+	"MOC_PATH_PREFIX" : true,
+	"MOC_PREDEFS_CMD" : 
+	[
+		"D:/Qt/Tools/mingw1310_64/bin/g++.exe",
+		"-dM",
+		"-E",
+		"-c",
+		"D:/vscode/cmake/share/cmake-3.18/Modules/CMakeCXXCompilerABI.cpp"
+	],
+	"MOC_PREDEFS_FILE" : "D:/vscode/pro/compare/build/main_autogen/moc_predefs.h",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : [],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 8,
+	"PARSE_CACHE_FILE" : "D:/vscode/pro/compare/build/CMakeFiles/main_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "D:/Qt/6.8.0/mingw_64/bin/moc.exe",
+	"QT_UIC_EXECUTABLE" : "D:/Qt/6.8.0/mingw_64/bin/uic.exe",
+	"QT_VERSION_MAJOR" : 6,
+	"QT_VERSION_MINOR" : 8,
+	"SETTINGS_FILE" : "D:/vscode/pro/compare/build/CMakeFiles/main_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[ "D:/vscode/pro/compare/src/DiffEngine.cpp", "MU" ],
+		[ "D:/vscode/pro/compare/src/MainWindow.cpp", "MU" ],
+		[ "D:/vscode/pro/compare/src/RecordWidget.cpp", "MU" ],
+		[ "D:/vscode/pro/compare/src/ScannerWorker.cpp", "MU" ],
+		[ "D:/vscode/pro/compare/src/VCDUFileReader.cpp", "MU" ],
+		[ "D:/vscode/pro/compare/src/main.cpp", "MU" ],
+		[ "D:/vscode/pro/compare/src/xxh_x86dispatch.c", "MU" ],
+		[ "D:/vscode/pro/compare/src/xxhash.c", "MU" ]
+	],
+	"UIC_OPTIONS" : [],
+	"UIC_SEARCH_PATHS" : [],
+	"UIC_SKIP" : [],
+	"UIC_UI_FILES" : [],
+	"VERBOSITY" : 0
+}

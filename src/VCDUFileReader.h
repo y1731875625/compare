@@ -48,6 +48,10 @@ public:
     void setResults(const QVector<RecordInfo> &records,
                     const QVector<FrameError> &frameErrors,
                     const QVector<int> &crcErrors);
+    void setCustomPreamble(const QByteArray &preamble);
+
+    static QByteArray PREAMBLE_EA;     // EA 00 03 B4
+
 
 signals:
     void progressUpdated(int percent);
@@ -66,7 +70,10 @@ private:
     bool m_isOpen = false;
 
     static const QByteArray PREAMBLE_VCDU;   // 1A CF FC 1D
-    static const QByteArray PREAMBLE_EA;     // EA 00 03 B4
+    
+
+    QByteArray m_customPreamble;          // 存储用户自定义前导码
+    bool m_useCustomPreamble = false;     // 是否启用自定义
 };
 
 #endif // VCDUFILEREADER_H

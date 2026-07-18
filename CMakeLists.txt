@@ -14,17 +14,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui Charts Multimedia SerialPo
 # -------------------- 源文件收集 --------------------
 set(SOURCE_DIRS
     ./src
-    ./src/config
-    ./src/database
-    ./src/parapro
-    ./src/Telemetry
     ./src/UI
-    ./src/fileread
-    ./src/json
-    ./src/serialconfig
-    ./src/tcp
-    ./src/crc
-    ./src/pychart
 )
 
 foreach(dir ${SOURCE_DIRS})

@@ -1,9 +1,21 @@
 #include "VCDUFileReader.h"
 #include "RecordConstants.h"
 #include <QDebug>
-
+extern QString EAstring;
 const QByteArray VCDUFileReader::PREAMBLE_VCDU = QByteArray::fromHex("1ACFFC1D");
-const QByteArray VCDUFileReader::PREAMBLE_EA = QByteArray::fromHex("EA0003B4000000AF600000000384111F");
+
+QByteArray VCDUFileReader::PREAMBLE_EA = QByteArray::fromHex("EA0003B4000000AF600000000384111E");
+
+void VCDUFileReader::setCustomPreamble(const QByteArray &preamble)
+{
+    if (preamble.isEmpty()) {
+        m_useCustomPreamble = false;
+        m_customPreamble.clear();
+    } else {
+        m_customPreamble = preamble;
+        m_useCustomPreamble = true;
+    }
+}
 
 static quint16 crc16_ccitt_false_table[256];
 static bool crc_table_initialized = false;
@@ -100,7 +112,7 @@ void VCDUFileReader::scanFile()
         preambleSize = 16;
         vc0Offset = 56;
         recordStartOffset = 56;
-        frameInterval = 56 + VCDU::RECORD_SIZE;
+        frameInterval =  56+VCDU::RECORD_SIZE;//56
         preambleSkipSize = 58;
     }
 
@@ -118,35 +130,53 @@ void VCDUFileReader::scanFile()
     int foundCount = 0;
 
     // ===== 直接扫描映射内存 =====
-    while (searchPos + preambleSize + vc0Offset + VCDU::RECORD_SIZE <= totalSize) {
+    while (searchPos + vc0Offset + VCDU::RECORD_SIZE <= totalSize) {
+        // if(foundCount == 21373)
+        // {
+        //     qDebug()<<"开始查找21373帧数据";
+        // }
         // 比较前导码（使用 memcmp 避免拷贝）
         if (memcmp(mappedData + searchPos, preamble.constData(), preambleSize) == 0) {
             qint64 vc0Pos = searchPos + vc0Offset;
+            
+            // qDebug()<<"vc0Pos:"<<vc0Pos;
             quint16 vc0 = (mappedData[vc0Pos] << 8) | mappedData[vc0Pos + 1];
-
+            // if(foundCount == 21373)
+            // {
+            //     qDebug()<<"vc0Pos:"<<vc0;
+            // }
             if (vc0 == m_expectedVC0) {
+                // if(foundCount == 21373){
+                //     qDebug() << "找到记录: 偏移=0x" << QString::number(searchPos, 16).toUpper() << "  VC0=0x" << QString::number(vc0, 16).toUpper();
+                // }
+                
                 qint64 recordStart = searchPos + recordStartOffset;
 
                 // ===== 直接从映射内存读取数据，不创建 QByteArray =====
                 // 只记录偏移，不拷贝数据
                 RecordInfo info;
                 info.fileOffset = recordStart;
-                
+                // qDebug()<<(mappedData[recordStart + VCDU::FRAME_OFFSET] << 16) |(mappedData[recordStart + VCDU::FRAME_OFFSET + 1] << 8) | mappedData[recordStart + VCDU::FRAME_OFFSET + 2];
                 // 读取帧计数（直接从映射内存）
                 quint32 frameCount = (mappedData[recordStart + VCDU::FRAME_OFFSET] << 16) |
                                      (mappedData[recordStart + VCDU::FRAME_OFFSET + 1] << 8) |
                                      mappedData[recordStart + VCDU::FRAME_OFFSET + 2];
                 info.frameCount = frameCount;
-
+                
+                // qDebug()<<"帧计数:"<<frameCount;
                 // CRC 校验（直接从映射内存）
                 bool crcValid = verifyCRCDirect(mappedData + recordStart);
                 info.crcValid = crcValid;
 
                 m_records.append(info);
-                if (!crcValid)
-                    m_crcErrors.append(m_records.size() - 1);
+                // if (!crcValid)
+                //     m_crcErrors.append(m_records.size() - 1);
 
                 foundCount++;
+                // if(foundCount == 21374)
+                // {
+                //     qDebug()<<"21374";
+                // }
                 // if (foundCount <= 10 || foundCount % 1000 == 0) {
                 //     qDebug() << QString("  [%1] 找到记录: 偏移=0x%2  帧计数=%3  CRC有效=%4")
                 //                 .arg(foundCount)
@@ -157,10 +187,24 @@ void VCDUFileReader::scanFile()
 
                 // ===== 跳转到下一帧 =====
                 qint64 nextPos = searchPos + frameInterval;
-
+            //     if(foundCount == 21373){
+            //     qDebug()<<"nextPos:"<<nextPos;
+            //     const uchar* dataAfter = mappedData + nextPos ;
+            //     int remain = totalSize - (nextPos );
+            //     int dumpLen = qMin(remain, 16); // 输出前 32 字节，避免刷屏
+        
+            //     // 关键：reinterpret_cast 转为 const char*，以便 QByteArray 接受
+            //     QByteArray after(reinterpret_cast<const char*>(dataAfter), dumpLen);
+            //     qDebug() << "后续 32 字节 (hex):" << after.toHex();
+            
+            // }
                 bool jumpSuccess = false;
-                if (nextPos + preambleSize <= totalSize &&
+                if (nextPos + preambleSize < totalSize &&
                     memcmp(mappedData + nextPos, preamble.constData(), preambleSize) == 0) {
+                        // if(foundCount == 21373){
+                        //     qDebug()<<"跳转成功已顺利匹配21373帧下次进入while后查找21373帧";
+                        // }
+                        
                     jumpSuccess = true;
                 }
 
@@ -181,6 +225,11 @@ void VCDUFileReader::scanFile()
             int percent = (int)((searchPos * 100) / totalSize);
             emit progressUpdated(percent);
         }
+        // if(foundCount == 21373)
+        // {
+        //     qDebug()<<"进度:"<<searchPos + preambleSize + vc0Offset + VCDU::RECORD_SIZE<<totalSize;
+        // }
+       
     }
 
     m_file.unmap(mappedData);
@@ -197,7 +246,7 @@ void VCDUFileReader::scanFile()
 
     qDebug() << "========== 扫描完成 ==========";
     qDebug() << "总共找到记录数:" << m_records.size();
-    qDebug() << "CRC 错误记录数:" << m_crcErrors.size();
+    // qDebug() << "CRC 错误记录数:" << m_crcErrors.size();
     qDebug() << "帧不连续错误数:" << m_frameErrors.size();
     qDebug() << "=====================================";
 }

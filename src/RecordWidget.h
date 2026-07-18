@@ -13,7 +13,9 @@ public:
 
     void setRecord(const QByteArray &rawRecord, bool showHeader = true);
     void clear();
-    void highlightByteRange(int startOffset, int length, const QColor &color);
+    void highlightByteRange(int startOffset, int length, 
+        const QColor &bgColor, 
+        const QColor &fgColor = Qt::black);  // 默认黑色
     void jumpToByteOffset(int byteOffset); // 滚动到指定字节偏移并选中
 
 private:

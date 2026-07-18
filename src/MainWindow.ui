@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1200</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>VCDU 比对工具</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLineEdit" name="vc0Input">
+        <property name="placeholderText">
+         <string>VC0 (Hex)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="vc0Input_2">
+        <property name="text">
+         <string>EA0003B4000000AF600000000384111E</string>
+        </property>
+        <property name="placeholderText">
+         <string>IPE (Hex)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnOrig">
+        <property name="text">
+         <string>选择原文件</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnComp">
+        <property name="text">
+         <string>选择比较文件</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnCompare">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>重新比对</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QSplitter" name="vSplitter">
+      <property name="orientation">
+       <enum>Qt::Orientation::Vertical</enum>
+      </property>
+      <property name="childrenCollapsible">
+       <bool>false</bool>
+      </property>
+      <widget class="QSplitter" name="hSplitter">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <widget class="RecordWidget" name="leftWidget" native="true"/>
+       <widget class="RecordWidget" name="rightWidget" native="true"/>
+      </widget>
+      <widget class="QTabWidget" name="tabWidget">
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <widget class="QWidget" name="diffTab">
+        <attribute name="title">
+         <string>数据差异</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="diffLayout">
+         <item>
+          <widget class="QTableWidget" name="diffTable">
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+           </property>
+           <property name="columnCount">
+            <number>4</number>
+           </property>
+           <property name="horizontalHeaderLabels" stdset="0">
+            <stringlist>
+             <string>记录号</string>
+             <string>字节偏移</string>
+             <string>原值</string>
+             <string>新值</string>
+            </stringlist>
+           </property>
+           <column/>
+           <column/>
+           <column/>
+           <column/>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="diffPaginationWidget" native="true">
+           <layout class="QHBoxLayout" name="diffPageLayout">
+            <item>
+             <widget class="QPushButton" name="diffFirstBtn">
+              <property name="text">
+               <string>首页</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="diffPrevBtn">
+              <property name="text">
+               <string>上一页</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="diffNextBtn">
+              <property name="text">
+               <string>下一页</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="diffLastBtn">
+              <property name="text">
+               <string>末页</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="diffJumpLabel">
+              <property name="text">
+               <string>跳转:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="diffPageInput">
+              <property name="fixedWidth" stdset="0">
+               <number>50</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="diffPageLabel">
+              <property name="text">
+               <string> / 1 页</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="diffSpacer">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="errorTab">
+        <attribute name="title">
+         <string>CRC/帧错误</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="errorLayout">
+         <item>
+          <widget class="QTableWidget" name="errorTable">
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+           </property>
+           <property name="columnCount">
+            <number>5</number>
+           </property>
+           <property name="horizontalHeaderLabels" stdset="0">
+            <stringlist>
+             <string>文件</string>
+             <string>类型</string>
+             <string>记录号</string>
+             <string>详情</string>
+             <string>跳转</string>
+            </stringlist>
+           </property>
+           <column/>
+           <column/>
+           <column/>
+           <column/>
+           <column/>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="errorPaginationWidget" native="true">
+           <layout class="QHBoxLayout" name="errorPageLayout">
+            <item>
+             <widget class="QPushButton" name="errorFirstBtn">
+              <property name="text">
+               <string>首页</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="errorPrevBtn">
+              <property name="text">
+               <string>上一页</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="errorNextBtn">
+              <property name="text">
+               <string>下一页</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="errorLastBtn">
+              <property name="text">
+               <string>末页</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="errorJumpLabel">
+              <property name="text">
+               <string>跳转:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="errorPageInput">
+              <property name="fixedWidth" stdset="0">
+               <number>50</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="errorPageLabel">
+              <property name="text">
+               <string> / 1 页</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="errorSpacer">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>RecordWidget</class>
+   <extends>QWidget</extends>
+   <header>RecordWidget.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
